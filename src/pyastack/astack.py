@@ -139,22 +139,8 @@ class AtomicStack(Generic[T]):
     
 
 if __name__ == '__main__':
-    stack = AtomicStack('HelloWorld')
-    # for i in range(0,stack.__len__()):
-    #   print(f'先頭：{stack.peek()}::削除{stack.pop()}')
-    # print('安全取得テスト')
-    # for i in range(0,stack.__len__() + 3):
-    #   print(f'先頭：{stack.peek_optional()}::削除{stack.pop_optional()}')
-    # stack.clear()
-    # stack.push('A')
-    # stack.push('A1')
-    # stack.push('A2')
-
-
-    # 複数回の push や pop をトランザクション的にまとめる
-    with stack:
-        val1 = stack.pop()
-        val2 = stack.pop()
-        stack.push(val1 + val2)  # この一連の処理中に別スレッドが割り込めない
-        print(val1+val2)
-
+    from pathlib import Path
+    # このファイル (astack.py) の親の親にある LICENSE を取得
+    license_path = Path(__file__).resolve().parents[2] / 'LICENSE'
+    with open(license_path, encoding='utf-8') as f:
+        print(f.read())
