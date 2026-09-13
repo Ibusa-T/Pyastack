@@ -3,6 +3,7 @@
 from .astack import AtomicStack
 
 __version__ = "0.1.0"
+__author__  = "Ibusa-T"
 __all__ = ["AtomicStack"]
 
 def main() -> None:
