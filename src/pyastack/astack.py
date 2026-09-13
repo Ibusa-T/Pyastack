@@ -23,11 +23,9 @@ class AtomicStack(Generic[T]):
         self._lock:threading.RLock = threading.RLock()
         with self._lock:
             self._stack = obj
-            self.__head  = len(obj) - 1
             self.__capacity = capacity
         
-    
-    
+        
     def __enter__(self) -> 'AtomicStack[T]':	
         self._lock.acquire()
         return self
@@ -45,10 +43,12 @@ class AtomicStack(Generic[T]):
         with self._lock:
             return len(self._stack)
 
+    
     def __iter__(self) -> Iterator[Union[str, T]]:
       with self._lock:
         return iter(reversed(self.as_list()))
  
+    
     def __str__(self) -> str:
         with self._lock:
             if isinstance(self._stack,list) :
@@ -59,8 +59,14 @@ class AtomicStack(Generic[T]):
     def __bool__(self) -> bool:
         with self._lock:
             return bool(self._stack)
-
     
+
+    @property
+    def capacity(self):
+        with self._lock:
+            return self.__capacity
+    
+
     def as_list(self) -> List[Union[str,T]]:
         with self._lock:
             if isinstance(self._stack,str) and ' ' in self._stack:
@@ -74,43 +80,49 @@ class AtomicStack(Generic[T]):
         with self._lock:
             return list(self._stack)
 
-    
+
+    @property
+    def head(self):
+        with self._lock:
+            return len(self._stack) - 1
+
     def is_head(self) -> bool:
         with self._lock:
-            return self.__head != - 1
+            return self.head != - 1
+    
     
     def push(self,item:T) -> None:
         with self._lock:
             if self._stack is None :
                 raise AttributeError('stack is NonType')
             elif self.is_full():
-                    raise OverflowError(f'object size {len(self._stack)} exceeds push item {self.__capacity}')
+                    raise OverflowError(f'object size {len(self._stack)} exceeds push item {self.capacity}')
             if isinstance(self._stack,list):
                 self._stack.append(item)
             elif isinstance(self._stack,str):
                 self._stack += str(item)
             
-            self.__head = self.__head + 1
-    
     
     def pop(self) -> Union[str,T]:
         with self._lock:
             if not self.is_head() :
-                raise IndexError(f'pointer head of {self.__head}')
+                raise IndexError(f'pointer head of {self.head}')
             else :
                 current_val = self._stack[-1]
                 if isinstance(self._stack,list) :
                     del self._stack[-1]
                 elif isinstance(self._stack,str) :
                     self._stack = self._stack[:-1]
-                self.__head = self.__head - 1            
         return current_val
+    
     
     def peek(self) -> Union[str,T]:
         with self._lock:
             if not self.is_head() :
-                raise IndexError(f'pointer head of {self.__head}')
+                raise IndexError(f'pointer head of {self.head}')
             return self._stack[-1]
+    
+    
     """
     Safety
     """
@@ -127,27 +139,26 @@ class AtomicStack(Generic[T]):
         except IndexError as ie :
             return None
     
-    """
-    プッシュ前にcapacity以上 -> NG
-    プッシュ後の合計がcapacityより大きい->NG
-    分岐を分けた理由はどちらも理由としては考慮していない問題が別々のため
-    メッセージを別にしてわかりやすくした
-    """
-    def push_many(self,*items:T):
-        with self._lock :
-            if not items :
+    
+    def push_many(self, *items: T) -> None:
+        with self._lock:
+            if not items:
                 return
             elif self.is_full():
-                    raise OverflowError(f'object size {len(self._stack)} exceeds push item {self.__capacity}')
-            elif (len(items) + self.__len__()) > self.__capacity :
-                raise OverflowError(f'The size being added ({len(self._stack)}) exceeds the capacity of the item to be pushed ({self.__capacity}).')
-            
-            if isinstance(self._stack,list):
+                raise OverflowError(
+                    f"stack size ({len(self._stack)}) reached capacity"
+                    f" ({self.capacity})"
+                )
+            elif (len(self._stack) + len(items)) > self.capacity:
+                raise OverflowError(
+                    f"Adding {len(items)} items exceeds available capacity "
+                    f"(current: {len(self._stack)}, capacity: {self.capacity})"
+                )
+            if isinstance(self._stack, list):
                 self._stack.extend(items)
-            elif isinstance(self._stack,str) :
+            elif isinstance(self._stack, str):
                 self._stack += "".join(map(str, items))
-            self.__head += len(items)
-    
+   
     
     def clear(self) -> None:
         with self._lock :
@@ -155,25 +166,27 @@ class AtomicStack(Generic[T]):
                 self._stack = []
             elif isinstance(self._stack,str):
                 self._stack = ''
-            self.__head = - 1
+    
     
     def is_empty(self) -> bool:
         with self._lock:
             return not self._stack
     
+    
     def is_full(self) -> bool:
         with self._lock:
-            if self.__capacity is None :
+            if self.capacity is None :
                 return False
-            return len(self._stack) >= self.__capacity
+            return len(self._stack) >= self.capacity
 
 
 if __name__ == '__main__':
     capacity_test_int_stack = AtomicStack([1,2,3],10)
-    capacity_test_int_stack.push_many(1,2)
-    capacity_test_int_stack.push_many(7,3,4)
-    capacity_test_int_stack.push_many(7,3,4)
+    capacity_test_int_stack.push(1)
+    capacity_test_int_stack.push_many(4,5)
 
+    for i in range(0,capacity_test_int_stack.__len__() - 1):
+        print(f'pop:{capacity_test_int_stack.pop()}  peek:{capacity_test_int_stack.peek()}')        
     """
     from pathlib import Path
     # このファイル (astack.py) の親の親にある LICENSE を取得
