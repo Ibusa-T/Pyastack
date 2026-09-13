@@ -1,3 +1,8 @@
+"""
+2026/09/13 
+author Ibusa-T
+"""
+
 import threading
 from typing import Any,Generic, List, Optional, TypeVar, Union,Iterator
 
@@ -5,26 +10,26 @@ from typing import Any,Generic, List, Optional, TypeVar, Union,Iterator
 # 1. 任意の型を表す型変数「T」を作る
 T = TypeVar('T')
 class AtomicStack(Generic[T]):
-    _cls:Optional['AtomicStack[Any]'] = None
-    _lock:threading.RLock = threading.RLock()
-    _initialized:bool = False
-    def __new__(cls,*args,**kwargs) -> 'AtomicStack[T]':
-        if cls._cls is None :
-            cls._cls = super().__new__(cls)
-        return cls._cls   
-    
-    def __init__(self,obj:Union[str,List[T]]) -> None:
+
+
+    def __init__(self
+    ,obj:Union[str,List[T]]
+    ,capacity:Optional[int] = 255) -> None:
+        if capacity is not None and capacity <= 0 :
+            raise ValueError('capacity must be a positive integer')
+        elif capacity is not None and capacity < len(obj)  :
+            raise OverflowError(f'initial object size {len(obj)} exceeds {capacity}')
+
+        self._lock:threading.RLock = threading.RLock()
         with self._lock:
-            if self._initialized:
-                return
-            self.__stack = obj
-            self.__head  = len(obj) - 1
-            self.__index = len(obj) - 1
-            self._initialized = True
-    
-    def __enter__(self) -> 'AtomicStack[T]':
+            self._stack = obj
+            self.__capacity = capacity
+        
+        
+    def __enter__(self) -> 'AtomicStack[T]':	
         self._lock.acquire()
         return self
+    
     
     def __exit__(self
                  ,exec_type:Optional[type]
@@ -33,128 +38,199 @@ class AtomicStack(Generic[T]):
                  ) -> None:
         self._lock.release()
 
+    
     def __len__(self) -> int:
         with self._lock:
-            return len(self.__stack)
+            return len(self._stack)
 
-    def __iter__(self) -> Iterator[Union[str,T]]:
-        with self._lock :
-            self.__index = self.__len__()
-            return self
-
-    def __next__(self) -> Union[str,T]:
-        with self._lock:
-            if self.__index <=0:
-                raise StopIteration()
-            self.__index-=1
-            return self.__stack[self.__index]
     
-    def __index__(self) -> int:
-        with self._lock:
-            return self.__index
+    def __iter__(self) -> Iterator[Union[str, T]]:
+      with self._lock:
+        return iter(reversed(self.as_list()))
+ 
     
     def __str__(self) -> str:
         with self._lock:
-            if type(self.__stack) == list :
-                return ''.join(map(str,self.__stack))
-            return self.__stack
+            if isinstance(self._stack,list) :
+                return ''.join(map(str,self._stack))
+            return self._stack
+    
     
     def __bool__(self) -> bool:
         with self._lock:
-            return bool(self.__stack)
+            return bool(self._stack)
+    
+
+    @property
+    def capacity(self):
+        with self._lock:
+            return self.__capacity
+    
 
     def as_list(self) -> List[Union[str,T]]:
         with self._lock:
-            if type(self.__stack) == str :
-                return self.__stack.split()
-            return list(self.__stack)
+            if isinstance(self._stack,str) and ' ' in self._stack:
+                return self._stack.split()
+            else :
+                return list(self._stack)
+            return list(self._stack)
 
+    
     def as_chars(self) -> List[Union[str,T]]:
         with self._lock:
-            return list(self.__stack)
+            return list(self._stack)
+
+
+    @property
+    def head(self):
+        with self._lock:
+            return len(self._stack) - 1
 
     def is_head(self) -> bool:
         with self._lock:
-            return self.__head != - 1
+            return self.head != - 1
     
-    def push(self,items:T) -> None:
+    
+    def push(self,item:T) -> None:
         with self._lock:
-            if self.is_none() :
+            if self._stack is None :
                 raise AttributeError('stack is NonType')
-            if type(self.__stack) == list:
-                self.__stack.append(items)
-            elif type(self.__stack) == str :
-                self.__stack += str(items)
-            self.__head = self.__head + 1
+            elif self.is_full():
+                    raise OverflowError(f'object size {len(self._stack)} exceeds push item {self.capacity}')
+            if isinstance(self._stack,list):
+                self._stack.append(item)
+            elif isinstance(self._stack,str):
+                self._stack += str(item)
+            
     
     def pop(self) -> Union[str,T]:
         with self._lock:
             if not self.is_head() :
-                raise IndexError(f'pointer head of {self.__head}')
+                raise IndexError(f'pointer head of {self.head}')
             else :
-                current_val = self.__stack[-1]
-                if type(self.__stack) == list :
-                    del self.__stack[-1]
-                elif type(self.__stack) == str :
-                    self.__stack = self.__stack[:-1]
-                self.__head = self.__head - 1            
+                current_val = self._stack[-1]
+                if isinstance(self._stack,list) :
+                    del self._stack[-1]
+                elif isinstance(self._stack,str) :
+                    self._stack = self._stack[:-1]
         return current_val
+    
     
     def peek(self) -> Union[str,T]:
         with self._lock:
             if not self.is_head() :
-                raise IndexError(f'pointer head of {self.__head}')
-            return self.__stack[-1]
- 
+                raise IndexError(f'pointer head of {self.head}')
+            return self._stack[-1]
+    
+    
+    """
+    Safety
+    """
     def peek_optional(self) -> Optional[Union[str,T]]:
         try:
             return self.peek()
         except IndexError as ie:
             return None        
     
+
     def pop_optional(self) -> Optional[Union[str,T]]:
         try:
             return self.pop()
         except IndexError as ie :
             return None
     
+    
+    def push_many(self, *items: T) -> None:
+        with self._lock:
+            if not items:
+                return
+            elif self.is_full():
+                raise OverflowError(
+                    f"stack size ({len(self._stack)}) reached capacity"
+                    f" ({self.capacity})"
+                )
+            elif (len(self._stack) + len(items)) > self.capacity:
+                raise OverflowError(
+                    f"Adding {len(items)} items exceeds available capacity "
+                    f"(current: {len(self._stack)}, capacity: {self.capacity})"
+                )
+            if isinstance(self._stack, list):
+                self._stack.extend(items)
+            elif isinstance(self._stack, str):
+                self._stack += "".join(map(str, items))
+   
+    
     def clear(self) -> None:
         with self._lock :
-            if type(self.__stack) == list :
-                self.__stack = []
-            elif type(self.__stack) == str :
-                self.__stack = ''
-            self.__head = - 1
-            self.__index = - 1
+            if isinstance(self._stack,list):
+                self._stack = []
+            elif isinstance(self._stack,str):
+                self._stack = ''
+    
     
     def is_empty(self) -> bool:
         with self._lock:
-            return not self.__stack
+            return not self._stack
     
-    def is_none(self) -> bool:
+    
+    def is_full(self) -> bool:
         with self._lock:
-            return self.__stack is None
+            if self.capacity is None :
+                return False
+            return len(self._stack) >= self.capacity
 
- 
-    
 
 if __name__ == '__main__':
-    stack = AtomicStack('HelloWorld')
-    # for i in range(0,stack.__len__()):
-    #   print(f'先頭：{stack.peek()}::削除{stack.pop()}')
-    # print('安全取得テスト')
-    # for i in range(0,stack.__len__() + 3):
-    #   print(f'先頭：{stack.peek_optional()}::削除{stack.pop_optional()}')
-    # stack.clear()
-    # stack.push('A')
-    # stack.push('A1')
-    # stack.push('A2')
+    capacity_test_int_stack = AtomicStack([1,2,3],10)
+    capacity_test_int_stack.push(1)
+    capacity_test_int_stack.push_many(4,5)
+
+    for i in range(0,capacity_test_int_stack.__len__() - 1):
+        print(f'pop:{capacity_test_int_stack.pop()}  peek:{capacity_test_int_stack.peek()}')        
+    """
+    from pathlib import Path
+    # このファイル (astack.py) の親の親にある LICENSE を取得
+    license_path = Path(__file__).resolve().parents[2] / 'LICENSE'
+    with open(license_path, encoding='utf-8') as f:
+        print(f.read())
+    """
 
 
-    # 複数回の push や pop をトランザクション的にまとめる
-    with stack:
-        val1 = stack.pop()
-        val2 = stack.pop()
-        stack.push(val1 + val2)  # この一連の処理中に別スレッドが割り込めない
-        print(val1+val2)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
