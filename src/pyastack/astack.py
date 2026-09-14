@@ -10,8 +10,7 @@ from typing import Any,Generic, List, Optional, TypeVar, Union,Iterator
 # 1. 任意の型を表す型変数「T」を作る
 T = TypeVar('T')
 class AtomicStack(Generic[T]):
-
-
+    __slots__ = ('_lock','_stack','__capacity')
     def __init__(self
     ,obj:Union[str,List[T]]
     ,capacity:Optional[int] = 255) -> None:
@@ -70,8 +69,6 @@ class AtomicStack(Generic[T]):
 
     def __reversed__(self) -> Iterator[Union[str, T]]:
         with self._lock:
-            # if isinstance(self._stack,str):
-            #     return ''.join(iter(self.as_list())) 
             return iter(self.as_list())
 
 
@@ -121,8 +118,8 @@ class AtomicStack(Generic[T]):
     
     def push(self,item:T) -> None:
         with self._lock:
-            if not self.__bool__() :
-                return AttributeError('stack is NonType')  
+            if self.__bool__() :
+                raise AttributeError('stack is NonType')  
             elif item is None :
                 raise ValueError('item is NonType')
             elif self.is_full():
@@ -131,7 +128,8 @@ class AtomicStack(Generic[T]):
                 self._stack.append(item)
             elif isinstance(self._stack,str):
                 self._stack += str(item)
-            
+            else :
+                self._stack.append(item)
     
     def pop(self) -> Union[str,T]:
         with self._lock:
@@ -174,8 +172,8 @@ class AtomicStack(Generic[T]):
         with self._lock:
             if None in items:
                 raise ValueError('NonType in items')
-            elif not self.__bool__() :
-                return AttributeError('stack is NonType')
+            elif  self.__bool__() :
+                raise AttributeError('stack is NonType')
             elif self.is_full():
                 raise OverflowError(
                     f"stack size ({len(self._stack)}) reached capacity"
@@ -190,6 +188,8 @@ class AtomicStack(Generic[T]):
                 self._stack.extend(items)
             elif isinstance(self._stack, str):
                 self._stack += "".join(map(str, items))
+            else:
+                self._stack.extend(items)
    
     
     def clear(self) -> None:
@@ -209,11 +209,10 @@ class AtomicStack(Generic[T]):
     
 
 if __name__ == '__main__':
-    stack = AtomicStack('aaaac')
-    print(stack.__reversed__())
-
-    for s in stack.__reversed__() :
-        print(s)
+    stack = AtomicStack('aaa')
+    stack.clear()
+    stack.push_many(2)
+    print(stack)
     """
     from pathlib import Path
     # このファイル (astack.py) の親の親にある LICENSE を取得
