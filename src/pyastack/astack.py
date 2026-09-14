@@ -15,7 +15,9 @@ class AtomicStack(Generic[T]):
     def __init__(self
     ,obj:Union[str,List[T]]
     ,capacity:Optional[int] = 255) -> None:
-        if capacity is not None and capacity <= 0 :
+        if obj is None:
+            raise ValueError('Object args NonType')     
+        elif capacity is not None and capacity <= 0 :
             raise ValueError('capacity must be a positive integer')
         elif capacity is not None and capacity < len(obj)  :
             raise OverflowError(f'initial object size {len(obj)} exceeds {capacity}')
@@ -42,8 +44,12 @@ class AtomicStack(Generic[T]):
     def __len__(self) -> int:
         with self._lock:
             return len(self._stack)
-
     
+    def __contains__(self,item:Any) -> bool:
+        with self._lock:
+            return item in self._stack
+
+
     def __iter__(self) -> Iterator[Union[str, T]]:
       with self._lock:
         return iter(reversed(self.as_list()))
@@ -93,8 +99,10 @@ class AtomicStack(Generic[T]):
     
     def push(self,item:T) -> None:
         with self._lock:
-            if self._stack is None :
-                raise AttributeError('stack is NonType')
+            if not self.__bool__() :
+                return AttributeError('stack is NonType')  
+            elif item is None :
+                raise ValueError('item is NonType')
             elif self.is_full():
                     raise OverflowError(f'object size {len(self._stack)} exceeds push item {self.capacity}')
             if isinstance(self._stack,list):
@@ -142,8 +150,10 @@ class AtomicStack(Generic[T]):
     
     def push_many(self, *items: T) -> None:
         with self._lock:
-            if not items:
-                return
+            if None in items:
+                raise ValueError('NonType in items')
+            elif not self.__bool__() :
+                return AttributeError('stack is NonType')
             elif self.is_full():
                 raise OverflowError(
                     f"stack size ({len(self._stack)}) reached capacity"
@@ -166,12 +176,7 @@ class AtomicStack(Generic[T]):
                 self._stack = []
             elif isinstance(self._stack,str):
                 self._stack = ''
-    
-    
-    def is_empty(self) -> bool:
-        with self._lock:
-            return not self._stack
-    
+        
     
     def is_full(self) -> bool:
         with self._lock:
@@ -182,11 +187,9 @@ class AtomicStack(Generic[T]):
 
 if __name__ == '__main__':
     capacity_test_int_stack = AtomicStack([1,2,3],10)
-    capacity_test_int_stack.push(1)
-    capacity_test_int_stack.push_many(4,5)
+    capacity_test_int_stack.push_many(1,2,None,3,5)
 
-    for i in range(0,capacity_test_int_stack.__len__() - 1):
-        print(f'pop:{capacity_test_int_stack.pop()}  peek:{capacity_test_int_stack.peek()}')        
+
     """
     from pathlib import Path
     # このファイル (astack.py) の親の親にある LICENSE を取得
