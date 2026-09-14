@@ -40,26 +40,47 @@ class AtomicStack(Generic[T]):
                  ) -> None:
         self._lock.release()
 
-    
-    def __len__(self) -> int:
-        with self._lock:
-            return len(self._stack)
-    
-    def __contains__(self,item:Any) -> bool:
-        with self._lock:
-            return item in self._stack
 
-
-    def __iter__(self) -> Iterator[Union[str, T]]:
-      with self._lock:
-        return iter(reversed(self.as_list()))
- 
-    
     def __str__(self) -> str:
         with self._lock:
             if isinstance(self._stack,list) :
                 return ''.join(map(str,self._stack))
             return self._stack
+
+
+    def __len__(self) -> int:
+        with self._lock:
+            return len(self._stack)
+
+
+    def __getitem__(self, index: Union[int, slice]) -> Union[Union[str, T], list[Union[str, T]]]:
+      with self._lock:
+        return self._stack[index]
+
+
+    def __iter__(self) -> Iterator[Union[str, T]]:
+      with self._lock:
+        return iter(reversed(self.as_list()))
+
+
+    def __contains__(self,item:Any) -> bool:
+        with self._lock:
+            return item in self._stack
+
+
+    def __reversed__(self) -> Iterator[Union[str, T]]:
+        with self._lock:
+            # if isinstance(self._stack,str):
+            #     return ''.join(iter(self.as_list())) 
+            return iter(self.as_list())
+
+
+    def __repr__(self) -> str:
+      with self._lock:
+        return (
+            f"{self.__class__.__name__}(size={len(self._stack)},"
+            f" capacity={self.capacity})"
+        )
     
     
     def __bool__(self) -> bool:
@@ -91,6 +112,7 @@ class AtomicStack(Generic[T]):
     def head(self):
         with self._lock:
             return len(self._stack) - 1
+
 
     def is_head(self) -> bool:
         with self._lock:
@@ -183,13 +205,15 @@ class AtomicStack(Generic[T]):
             if self.capacity is None :
                 return False
             return len(self._stack) >= self.capacity
-
+    
+    
 
 if __name__ == '__main__':
-    capacity_test_int_stack = AtomicStack([1,2,3],10)
-    capacity_test_int_stack.push_many(1,2,None,3,5)
+    stack = AtomicStack('aaaac')
+    print(stack.__reversed__())
 
-
+    for s in stack.__reversed__() :
+        print(s)
     """
     from pathlib import Path
     # このファイル (astack.py) の親の親にある LICENSE を取得
