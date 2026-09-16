@@ -10,12 +10,13 @@ from typing import Any,Generic, List, Optional, TypeVar, Union,Iterator
 # 1. 任意の型を表す型変数「T」を作る
 T = TypeVar('T')
 class AtomicStack(Generic[T]):
-
-
+    __slots__ = ('_lock','_stack','__capacity')
     def __init__(self
     ,obj:Union[str,List[T]]
     ,capacity:Optional[int] = 255) -> None:
-        if capacity is not None and capacity <= 0 :
+        if obj is None:
+            raise ValueError('Object args NonType')     
+        elif capacity is not None and capacity <= 0 :
             raise ValueError('capacity must be a positive integer')
         elif capacity is not None and capacity < len(obj)  :
             raise OverflowError(f'initial object size {len(obj)} exceeds {capacity}')
@@ -38,28 +39,61 @@ class AtomicStack(Generic[T]):
                  ) -> None:
         self._lock.release()
 
-    
-    def __len__(self) -> int:
-        with self._lock:
-            return len(self._stack)
 
-    
-    def __iter__(self) -> Iterator[Union[str, T]]:
-      with self._lock:
-        return iter(reversed(self.as_list()))
- 
-    
     def __str__(self) -> str:
         with self._lock:
             if isinstance(self._stack,list) :
                 return ''.join(map(str,self._stack))
             return self._stack
+
+
+    def __len__(self) -> int:
+        with self._lock:
+            return len(self._stack)
+
+
+    def __getitem__(self, index: Union[int, slice]) -> Union[Union[str, T], list[Union[str, T]]]:
+      with self._lock:
+        return self._stack[index]
+
+
+    def __iter__(self) -> Iterator[Union[str, T]]:
+      with self._lock:
+        return iter(reversed(self.as_list()))
+
+
+    def __contains__(self,item:Any) -> bool:
+        with self._lock:
+            return item in self._stack
+
+
+    def __reversed__(self) -> Iterator[Union[str, T]]:
+        with self._lock:
+            return iter(self.as_list())
+
+
+    def __repr__(self) -> str:
+      with self._lock:
+        return (
+            f"{self.__class__.__name__}(size={len(self._stack)},"
+            f" capacity={self.capacity})"
+        )
     
     
     def __bool__(self) -> bool:
         with self._lock:
             return bool(self._stack)
     
+    def __eq__(self, other: object) -> bool:
+      """別インスタンスでも、同一の型かつ中身が等しいかをスレッドセーフに判定"""
+      if not isinstance(other, AtomicStack):
+        # 相手が比較不可能な型なら例外ではなく NotImplemented を返すのが Python の作法
+        return NotImplemented
+      
+      with self._lock:
+            with other._lock:
+                return self._stack == other._stack
+                
 
     @property
     def capacity(self):
@@ -86,6 +120,7 @@ class AtomicStack(Generic[T]):
         with self._lock:
             return len(self._stack) - 1
 
+
     def is_head(self) -> bool:
         with self._lock:
             return self.head != - 1
@@ -93,15 +128,18 @@ class AtomicStack(Generic[T]):
     
     def push(self,item:T) -> None:
         with self._lock:
-            if self._stack is None :
-                raise AttributeError('stack is NonType')
+            if self.__bool__() :
+                raise AttributeError('stack is NonType')  
+            elif item is None :
+                raise ValueError('item is NonType')
             elif self.is_full():
                     raise OverflowError(f'object size {len(self._stack)} exceeds push item {self.capacity}')
             if isinstance(self._stack,list):
                 self._stack.append(item)
             elif isinstance(self._stack,str):
                 self._stack += str(item)
-            
+            else :
+                self._stack.append(item)
     
     def pop(self) -> Union[str,T]:
         with self._lock:
@@ -123,7 +161,7 @@ class AtomicStack(Generic[T]):
             return self._stack[-1]
     
     
-    """
+    """ 
     Safety
     """
     def peek_optional(self) -> Optional[Union[str,T]]:
@@ -142,8 +180,10 @@ class AtomicStack(Generic[T]):
     
     def push_many(self, *items: T) -> None:
         with self._lock:
-            if not items:
-                return
+            if None in items:
+                raise ValueError('NonType in items')
+            elif  self.__bool__() :
+                raise AttributeError('stack is NonType')
             elif self.is_full():
                 raise OverflowError(
                     f"stack size ({len(self._stack)}) reached capacity"
@@ -158,35 +198,31 @@ class AtomicStack(Generic[T]):
                 self._stack.extend(items)
             elif isinstance(self._stack, str):
                 self._stack += "".join(map(str, items))
+            else:
+                self._stack.extend(items)
    
     
     def clear(self) -> None:
         with self._lock :
             if isinstance(self._stack,list):
-                self._stack = []
+                self._stack.clear()
             elif isinstance(self._stack,str):
                 self._stack = ''
-    
-    
-    def is_empty(self) -> bool:
-        with self._lock:
-            return not self._stack
-    
+        
     
     def is_full(self) -> bool:
         with self._lock:
             if self.capacity is None :
                 return False
             return len(self._stack) >= self.capacity
-
+    
+    
 
 if __name__ == '__main__':
-    capacity_test_int_stack = AtomicStack([1,2,3],10)
-    capacity_test_int_stack.push(1)
-    capacity_test_int_stack.push_many(4,5)
-
-    for i in range(0,capacity_test_int_stack.__len__() - 1):
-        print(f'pop:{capacity_test_int_stack.pop()}  peek:{capacity_test_int_stack.peek()}')        
+    stack = AtomicStack([3,4])
+    stack2 = AtomicStack([3,4])
+    print(stack2.__eq__(other=stack))
+    
     """
     from pathlib import Path
     # このファイル (astack.py) の親の親にある LICENSE を取得
