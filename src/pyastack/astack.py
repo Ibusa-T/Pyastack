@@ -84,6 +84,16 @@ class AtomicStack(Generic[T]):
         with self._lock:
             return bool(self._stack)
     
+    def __eq__(self, other: object) -> bool:
+      """別インスタンスでも、同一の型かつ中身が等しいかをスレッドセーフに判定"""
+      if not isinstance(other, AtomicStack):
+        # 相手が比較不可能な型なら例外ではなく NotImplemented を返すのが Python の作法
+        return NotImplemented
+      
+      with self._lock:
+            with other._lock:
+                return self._stack == other._stack
+                
 
     @property
     def capacity(self):
@@ -151,7 +161,7 @@ class AtomicStack(Generic[T]):
             return self._stack[-1]
     
     
-    """
+    """ 
     Safety
     """
     def peek_optional(self) -> Optional[Union[str,T]]:
@@ -195,7 +205,7 @@ class AtomicStack(Generic[T]):
     def clear(self) -> None:
         with self._lock :
             if isinstance(self._stack,list):
-                self._stack = []
+                self._stack.clear()
             elif isinstance(self._stack,str):
                 self._stack = ''
         
@@ -209,10 +219,10 @@ class AtomicStack(Generic[T]):
     
 
 if __name__ == '__main__':
-    stack = AtomicStack('aaa')
-    stack.clear()
-    stack.push_many(2)
-    print(stack)
+    stack = AtomicStack([3,4])
+    stack2 = AtomicStack([3,4])
+    print(stack2.__eq__(other=stack))
+    
     """
     from pathlib import Path
     # このファイル (astack.py) の親の親にある LICENSE を取得
