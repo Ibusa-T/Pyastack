@@ -1,111 +1,183 @@
-# Pyastack
+#Pyastack
 
-## 紹介
-*ミュータブルオブジェクトとイミュータブルオブジェクトを同一のインターフェースで透過的に操作できる、軽量・スレッドセーフなスタックライブラリ。*
+## Introduction
 
-## 主な特徴
-- **型を意識させない透過的な操作感**: 型を意識せずに API で追加・取り出しが可能
-- **スレッドセーフなアトミック操作**: `threading.RLock` により、マルチスレッド環境でも競合（データ破壊）を防止
-- **低オーバーヘッド・メモリ最適化**: `__slots__` による属性管理の軽量化と、CPython ネイティブ処理を活用した高速な一括操作（`push_many`）
-- **スタックあふれ防止（Capacity ガード）**: 意図しないメモリ浪費やオーバーフローを未然に防止
-- **外部依存ゼロ（Pure Python）**: 標準ライブラリのみで動作
+*A lightweight, thread-safe stack library that allows you to transparently manipulate mutable objects and immutable objects with the same interface. *
 
+## Main features
 
+- **Transparent operation that does not make you aware of the type**: It is possible to add and remove with the API without being aware of the type
 
-## プロジェクト構成
+- **Thread-safe atomic operation**: `threading.RLock` prevents conflict (data destruction) even in multi-threaded environments
+
+- **Low overhead memory optimization**: Weight reduction of attribute management with `__slots__` and high-speed batch operation using CPython native processing (`push_many`)
+
+- **Stack overflow prevention (Capacity guard)**: Prevent unintended memory waste and overflow
+
+- **Zero external dependence (Pure Python)**: Works only in standard libraries
+
+## Project structure
+
 ```
 Pyastack/
+
 ├── src/
-│   └── pyastack/
-│       ├── __init__.py      # パッケージのエントリポイント (クラス露出)
-│       ├── stack.py         # AtomicStack クラス本体
-│       └── py.typed         # 型ヒント対応マーカー (空ファイル)
+
+│ └── pyastack/
+
+│ ├── __init__.py # Package entry point (class exposure)
+
+│ ├── stack.py # AtomicStack class body
+
+│ └── py.typed # type hint compatible marker (empty file)
+
 ├── tests/
-│   └── test_stack.py        # ユニットテスト (pytest)
-│   └── data                 #テストデータ
-├── .gitignore
-├── LICENSE                  # MIT ライセンスファイル
-├── README.md                # ドキュメント
-└── pyproject.toml           # パッケージのビルド・メタ情報定義
+
+│ └── test_stack.py # Unit test (pytest)
+
+│ └── data #test data
+
+├──.gitignore
+
+├── LICENSE # MIT License File
+
+├── README.md # Document
+
+└── pyproject.toml # Package build and meta information definition
 
 ```
 
+# Main API
 
-# 主要なAPI
+| Method / Syntactic | Explanation | Computation |
+
+| :--- | :--- | :--- |
+
+| `push(item)` | Add an element to the end of the stack. When the upper limit is exceeded, `OverflowError`. | $O(1)$ |
+
+| `push_many(*items)` | Lock multiple elements once and add them in bulk with C-level processing. | $O(K)$ |
+
+| `pop()` | Remove and delete the element at the end of the stack. Empty time is `IndexError`. | $O(1)$ |
+
+| `peek()` | Confirm the last element (do not delete). Empty time is `IndexError`. | $O(1)$ |
+
+| `clear()` | Empty the contents of the stack in place. | $O(1)$ |
+
+| `is_empty()` | Determine whether the stack is empty. | $O(1)$ |
+
+| `is_full()` | Determine whether the stack has reached the capacity limit. | $O(1)$ |
+
+| `len(stack)` | Get the current number of stored elements. | $O(1)$ |
+
+| `stack[i]` / `stack[a:b]]` | Inffix access and slice acquisition (`__getitem__`). | $O(1)$ / $O(K)$ |
+
+| `item in stack` | Element existence determination (`__contains__`). | $O(N)$ |
+
+| `for x in stack:` | Remove from the top of the stack to the bottom in order (LIFO inversion). | $O(N)$ |
 
 
-
-
-
-# クイックスタート
+# Quick start
 
 ```python
-from pyastack import AtomicStack
 
-# リストで初期化（上限容量 10）
-stack = AtomicStack([1, 2, 3], capacity=10)
+From pyastack import AtomicStack
 
-# 要素をプッシュ（単一 / 一括）
-stack.push(4)
-stack.push_many(5, 6)
+# Initialize with a list (maximum capacity 10)
 
-print(stack.peek())      # 6 (末尾の確認)
-print(stack.pop())       # 6 (末尾の取り出し)
-print(len(stack))        # 5
-print(3 in stack)        # True (存在確認)
+Stack = AtomicStack([1, 2, 3], capacity=10)
+
+# Push elements (single / bulk)
+
+Stack.push(4)
+
+Stack.push_many(5,6)
+
+Print(stack.peek()) # 6 (confirmation at the end)
+
+Print(stack.pop()) # 6 (remove the end)
+
+Print(len(stack)) # 5
+
+Print(3 in stack) # True (confirmation of existence)
 
 ```
 
-
 ```python
-from pyastack import AtomicStack
 
-# 文字列で初期化
-char_stack = AtomicStack("hello", capacity=10)
+From pyastack import AtomicStack
 
-char_stack.push("!")
-print(str(char_stack))   # "hello!"
+# Initialize with a string
 
-# 末尾から1文字取り出し
-top_char = char_stack.pop()
-print(top_char)          # "!"
-print(str(char_stack))   # "hello"
+Char_stack = AtomicStack("hello", capacity=10)
+
+Char_stack.push("!")
+
+Print(str(char_stack)) # "hello!"
+
+# Remove 1 character from the end
+
+Top_char=char_stack.pop()
+
+Print(top_char) # "!"
+
+Print(str(char_stack)) # "hello"
 
 ```
 
 ```python
-stack = AtomicStack([10, 20, 30, 40])
 
-# 添字参照とスライス
-print(stack[-1])         # 40 (スタックトップ)
-print(stack[0])          # 10 (スタックボトム)
-print(stack[-2:])        # [30, 40]
+Stack = AtomicStack([10, 20, 30, 40])
 
-# スタック順（LIFO: 後入れ先出し）でのイテレーション
-for item in stack:
-    print(item)
-# 出力:
-# 40
-# 30
-# 20
-# 10
+# Reference and slice of subtitles
+
+Print(stack[-1]) # 40 (stack top)
+
+Print(stack[0]) # 10 (stack bottom)
+
+Print(stack[-2:]) # [30, 40]
+
+# Iteration in stack order (LIFO: last in first out)
+
+For item in stack:
+
+Print(item)
+
+# Output:
+
+#40
+
+#30
+
+#20
+
+#10
+
 ```
 
 ```python
-import threading
-from pyastack import AtomicStack
 
-stack = AtomicStack([], capacity=1000)
+Import threading
 
-def worker():
-    for i in range(100):
-        stack.push(i)
+From pyastack import AtomicStack
 
-threads = [threading.Thread(target=worker) for _ in range(10)]
-for t in threads:
-    t.start()
-for t in threads:
-    t.join()
+Stack = AtomicStack([], capacity=1000)
 
-print(len(stack))  # 競合なく正確に 1000
+Def worker():
+
+For i in range(100):
+
+Stack.push(i)
+
+Threads = [threading.Thread(target=worker) for _ in range(10)]
+
+For t in threads:
+
+T.start()
+
+For t in threads:
+
+T.join()
+
+Print(len(stack)) # Exactly 1000 without competition
+
 ```
