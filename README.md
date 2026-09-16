@@ -1,4 +1,5 @@
 #Pyastack
+*Read this in [日本語](./README.ja.md).*
 
 ## Introduction
 
