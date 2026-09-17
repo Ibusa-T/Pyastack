@@ -81,104 +81,96 @@ Pyastack/
 
 ```python
 
-From pyastack import AtomicStack
+from pyastack import AtomicStack
+if __name__ == '__main__':
+    # Initialize with a list (maximum capacity 10)
+    stack = AtomicStack([1, 2, 3], capacity=10)
+    # Push elements (single / bulk)
 
-# Initialize with a list (maximum capacity 10)
+    stack.push(4)
 
-Stack = AtomicStack([1, 2, 3], capacity=10)
+    stack.push_many(5,6)
 
-# Push elements (single / bulk)
+    print(stack.peek()) # 6 (confirmation at the end)
 
-Stack.push(4)
+    print(stack.pop()) # 6 (remove the end)
 
-Stack.push_many(5,6)
+    print(len(stack)) # 5
 
-Print(stack.peek()) # 6 (confirmation at the end)
+    print(3 in stack) # True (confirmation of existence)
 
-Print(stack.pop()) # 6 (remove the end)
+```
 
-Print(len(stack)) # 5
+```python
+from pyastack import AtomicStack
+if __name__ == '__main__':
+    # Initialize with a string
 
-Print(3 in stack) # True (confirmation of existence)
+    char_stack = AtomicStack("hello", capacity=10)
+
+    char_stack.push("!")
+
+    print(str(char_stack)) # "hello!"
+
+    # Remove 1 character from the end
+
+    top_char=char_stack.pop()
+
+    print(top_char) # "!"
+
+    print(str(char_stack)) # "hello"
+
+```
+
+```python
+from pyastack import AtomicStack
+if __name__ == '__main__':
+    stack = AtomicStack([10, 20, 30, 40])
+
+    # Reference and slice of subtitles
+
+    print(stack[-1]) # 40 (stack top)
+
+    print(stack[0]) # 10 (stack bottom)
+
+    print(stack[-2:]) # [30, 40]
+
+    # Iteration in stack order (LIFO: last in first out)
+
+    for item in stack:
+        print(item)
+
+    # Output:
+
+    #40
+
+    #30
+
+    #20
+
+    #10
 
 ```
 
 ```python
 
-From pyastack import AtomicStack
+import threading
 
-# Initialize with a string
+from pyastack import AtomicStack
 
-Char_stack = AtomicStack("hello", capacity=10)
+stack = AtomicStack([], capacity=1000)
 
-Char_stack.push("!")
+def worker():
+    for i in range(100):
+        stack.push(i)
+    
+    threads = [threading.Thread(target=worker) for _ in range(10)]
+    
+for t in threads:
+    t.start()
+for t in threads:
+    t.join()
 
-Print(str(char_stack)) # "hello!"
-
-# Remove 1 character from the end
-
-Top_char=char_stack.pop()
-
-Print(top_char) # "!"
-
-Print(str(char_stack)) # "hello"
-
-```
-
-```python
-
-Stack = AtomicStack([10, 20, 30, 40])
-
-# Reference and slice of subtitles
-
-Print(stack[-1]) # 40 (stack top)
-
-Print(stack[0]) # 10 (stack bottom)
-
-Print(stack[-2:]) # [30, 40]
-
-# Iteration in stack order (LIFO: last in first out)
-
-For item in stack:
-
-Print(item)
-
-# Output:
-
-#40
-
-#30
-
-#20
-
-#10
-
-```
-
-```python
-
-Import threading
-
-From pyastack import AtomicStack
-
-Stack = AtomicStack([], capacity=1000)
-
-Def worker():
-
-For i in range(100):
-
-Stack.push(i)
-
-Threads = [threading.Thread(target=worker) for _ in range(10)]
-
-For t in threads:
-
-T.start()
-
-For t in threads:
-
-T.join()
-
-Print(len(stack)) # Exactly 1000 without competition
+print(len(stack)) # Exactly 1000 without competition
 
 ```
