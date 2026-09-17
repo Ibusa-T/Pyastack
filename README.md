@@ -1,4 +1,11 @@
-#Pyastack
+# Pyastack
+
+[![PyPI version](https://img.shields.io/pypi/v/pyastack.svg)](https://pypi.org/project/pyastack/)
+[![Python versions](https://img.shields.io/pypi/pyversions/pyastack.svg)](https://pypi.org/project/pyastack/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Concurrency: Thread-Safe](https://img.shields.io/badge/concurrency-thread--safe-brightgreen.svg)](https://pypi.org/project/pyastack/)
+
+
 *Read this in [日本語](./README.ja.md).*
 
 ## Introduction
