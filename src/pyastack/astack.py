@@ -128,9 +128,7 @@ class AtomicStack(Generic[T]):
     
     def push(self,item:T) -> None:
         with self._lock:
-            if self.__bool__() :
-                raise AttributeError('stack is NonType')  
-            elif item is None :
+            if item is None :
                 raise ValueError('item is NonType')
             elif self.is_full():
                     raise OverflowError(f'object size {len(self._stack)} exceeds push item {self.capacity}')
@@ -182,7 +180,7 @@ class AtomicStack(Generic[T]):
         with self._lock:
             if None in items:
                 raise ValueError('NonType in items')
-            elif  self.__bool__() :
+            elif  not self.__bool__() :
                 raise AttributeError('stack is NonType')
             elif self.is_full():
                 raise OverflowError(
@@ -219,10 +217,6 @@ class AtomicStack(Generic[T]):
     
 
 if __name__ == '__main__':
-    stack = AtomicStack([3,4])
-    stack2 = AtomicStack([3,4])
-    print(stack2.__eq__(other=stack))
-    
     """
     from pathlib import Path
     # このファイル (astack.py) の親の親にある LICENSE を取得
