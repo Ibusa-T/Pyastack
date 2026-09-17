@@ -25,7 +25,10 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
-dependencies = []
+dependencies = [
+    "build>=1.6.1",
+    "twine>=7.0.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/Ibusa-T/Pyastack"
