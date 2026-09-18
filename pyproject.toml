@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pyastack"
-version = "0.1.0"
+version = "0.1.1"
 description = "A thread-safe, atomic stack implementation supporting both strings and lists uniformly."
 readme = "README.md"
 requires-python = ">=3.14"
