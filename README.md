@@ -5,8 +5,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Concurrency: Thread-Safe](https://img.shields.io/badge/concurrency-thread--safe-brightgreen.svg)](https://pypi.org/project/pyastack/)
 
-
 *Read this in [日本語](./README.ja.md).*
+
 
 ## Introduction
 
