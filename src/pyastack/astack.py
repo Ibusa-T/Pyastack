@@ -304,34 +304,12 @@ class AtomicStack(Generic[T]):
 
 
 if __name__ == '__main__':
-    import threading
-    stack = AtomicStack([], capacity=1000)
-
-
-    def worker():
-        for i in range(100):
-            stack.push(i)
-        
-    threads = [threading.Thread(target=worker) for _ in range(10)]
-        
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join()
-
-    print(len(stack)) # Exactly 1000 without competition
-
-    
-
-    
-    """
     from pathlib import Path
     # このファイル (astack.py) の親の親にある LICENSE を取得
     license_path = Path(__file__).resolve().parents[2] / 'LICENSE'
     with open(license_path, encoding='utf-8') as f:
         print(f.read())
-    """
-
+    
 
 
 

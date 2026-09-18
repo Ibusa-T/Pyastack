@@ -58,6 +58,26 @@ Pyastack/
 
 
 # クイックスタート
+`インストール`
+*pip*
+```
+ pip install pyastack
+```
+*uv*
+```
+ uv add  pyastack
+```
+
+`最新版に更新`
+*pip*
+```
+pip install --upgrade pyastack
+```
+*uv*
+```
+uv add --upgrade pyastack
+```
+
 
 ```python
 from pyastack import AtomicStack
