@@ -87,8 +87,30 @@ Pyastack/
 
 # Quick start
 
-```python
+install 
+*pip*
+```
+ pip install pyastack
+```
+*uv*
+```
+ uv add  pyastack
+```
 
+upgrade 
+
+*pip*
+```
+pip install --upgrade pyastack
+```
+
+*uv*
+```
+uv add --upgrade pyastack
+```
+
+
+```python
 from pyastack import AtomicStack
 if __name__ == '__main__':
     # Initialize with a list (maximum capacity 10)
